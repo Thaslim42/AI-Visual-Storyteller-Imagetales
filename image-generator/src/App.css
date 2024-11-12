@@ -1,0 +1,242 @@
+:root {
+  --primary-color: #2196F3;
+  --secondary-color: #4CAF50;
+  --error-color: #f44336;
+  --background-color: #f5f5f5;
+  --text-color: #333;
+  --border-radius: 8px;
+}
+
+.App {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.App-header {
+  background-color: #9c6bbc;
+  color: white;
+  padding: 25px;
+  text-align: center;
+  border-radius: 10px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 8px rgba(212, 180, 235, 0.3);
+}
+
+.App-header h1 {
+  margin: 0;
+  font-family: 'Santallo', cursive;
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tagline {
+  font-family: 'Santallo', cursive;
+  font-size: 1.2rem;
+  color: #fff;
+  margin-top: 10px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.App-main {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.control-panel {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background-color: #e77dbe;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: 'Santallo', cursive;
+  transition: background-color 0.3s;
+}
+
+.upload-button:hover {
+  background-color: #902978;
+}
+
+.preview-container {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.preview-image {
+  max-width: 300px;
+  max-height: 300px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.button-container {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.action-button {
+  padding: 12px 24px;
+  background-color: #9c6bbc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: 'Santallo', cursive;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-button:hover:not(:disabled) {
+  background-color: #c39fe0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-button:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.loading {
+  text-align: center;
+  color: #7f8c8d;
+  margin: 20px 0;
+}
+
+.error-message {
+  color: #e74c3c;
+  text-align: center;
+  margin: 20px 0;
+  padding: 10px;
+  background-color: #fadbd8;
+  border-radius: 5px;
+}
+
+.description-section h2 {
+  color: #e77dbe;
+  /* font-family: 'Santallo', cursive; */
+  margin-bottom: 15px;
+  /* -webkit-text-stroke: 1px black; */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.description-section .content-box p {
+  font-family: 'Santallo', cursive;
+  line-height: 1.8;
+  color: #333;
+}
+
+.story-segment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.story-segment.reverse {
+  grid-template-columns: 1fr 1fr;
+  direction: rtl;
+}
+
+.story-segment.reverse .story-text {
+  direction: ltr;
+}
+
+.story-segment.reverse .story-image {
+  direction: ltr;
+}
+
+.story-segment {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.story-segment:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.story-segment:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.story-image {
+  width: 100%;
+  min-height: 200px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.story-image img {
+  width: 90%;
+  height: auto;
+  max-height: 400px;
+  object-fit: cover;
+  display: block;
+  margin: 0 auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.story-text {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.paragraph p {
+  margin: 0;
+  line-height: 1.8;
+  font-size: 1.25rem;
+  color: #0b0a0b;
+  font-family: 'Santallo', cursive;
+}
+
+.image-description {
+  background: #ffffff; /* Set background to white */
+  padding: 15px; /* Add some padding for spacing */
+  border-radius: 8px; /* Keep the border radius for rounded corners */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+}
+
+.image-description h4 {
+  margin: 0 0 10px 0;
+  color: #9c6bbc; /* Keep the original color */
+  text-transform: uppercase;
+}
+
+.image-description p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  font-family: 'Santallo', cursive; /* Keep the original font */
+  color: #333; /* Change text color for better contrast */
+}
