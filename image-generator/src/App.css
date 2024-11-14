@@ -6,6 +6,13 @@
   --text-color: #333;
   --border-radius: 8px;
 }
+/* .styled-heading {
+  color: #e77dbe;
+  /* font-family: 'Santallo', cursive; */
+  /* margin-bottom: 15px; */
+  /* -webkit-text-stroke: 1px black; */
+  /* text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); */
+/* } */ 
 
 .App {
   min-height: 100vh;
@@ -239,4 +246,40 @@
   line-height: 1.5;
   font-family: 'Santallo', cursive; /* Keep the original font */
   color: #333; /* Change text color for better contrast */
+}
+
+/* Add these new styles to your existing App.css file */
+
+.audio-button {
+  width: 48px !important;
+  height: 48px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background-color: #9c6bbc !important;
+}
+
+.audio-button:hover:not(:disabled) {
+  background-color: #902978 !important;
+}
+
+.audio-button:disabled {
+  background-color: #bdc3c7 !important;
+  cursor: not-allowed;
+}
+
+.audio-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* Update the existing button-container class */
+.button-container {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+  align-items: center;
 }

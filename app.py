@@ -1,49 +1,44 @@
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-from PIL import Image
 import base64
 import os
 import re
-import io
-import pygame
 import requests
 from dotenv import load_dotenv
 from groq import Groq
-import openai
+import logging
+from openai import OpenAI
 import argparse
+import pygame
+import io
+
+# Initialize logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 load_dotenv()
 
-# API Keys and Configuration
-api_key = os.getenv("GROQ_API_KEY")
-openai_api_key = os.getenv("OPENAI_API_KEY")
-elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY")
-client = Groq(api_key=api_key)
+# Client setup
+grok_api_key = os.getenv("GROQ_API_KEY")
 llava_model = 'llava-v1.5-7b-4096-preview'
-MODEL_ID = 'gpt-3.5-turbo'
+openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY")
 
-# ElevenLabs Configuration
-ELEVENLABS_URL = "https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB"
-VOICE_SETTINGS = {
-    "stability": 0.5,
-    "similarity_boost": 0.8,
-    "style": 1,
-    "use_speaker_boost": False
-}
+# Global variable to store the latest image description
+latest_image_description = None
 
-# [Previous helper functions remain the same: encode_image, image_to_text, generate_description, ChatGPT_conversation]
-# Helper function to encode image as base64
 def encode_image(image_path):
+    """Convert image to base64 string"""
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
 
-# Generate image description using LLAVA model
-def image_to_text(client, model, base64_image, prompt):
-    chat_completion = client.chat.completions.create(
+def image_to_text(client1, model, base64_image, prompt):
+    """Generate description using LLAVA model"""
+    chat_completion = client1.chat.completions.create(
         messages=[
             {
                 "role": "user",
@@ -62,154 +57,206 @@ def image_to_text(client, model, base64_image, prompt):
     )
     return chat_completion.choices[0].message.content
 
-# Endpoint to generate description from image using LLAVA model
 @app.route('/generate_description', methods=['POST'])
 def generate_description():
+    """Generate description from uploaded image using LLAVA"""
+    global latest_image_description
+    
     if 'image' not in request.files:
-        return jsonify({'error': 'No image file uploaded'})
+        return jsonify({'error': 'No image file uploaded'}), 400
     
-    image = request.files['image']
-    default_prompt = 'Describe this image in detail like a story.'
+    try:
+        image = request.files['image']
+        default_prompt = 'Describe this image like a cartoon image.'
 
-    # Save and encode the image
-    image_path = secure_filename(image.filename)
-    image.save(image_path)
-    base64_image = encode_image(image_path)
+        # Save and encode the image
+        image_path = secure_filename(image.filename)
+        image.save(image_path)
+        base64_image = encode_image(image_path)
 
-    # Get image description
-    image_description = image_to_text(client, llava_model, base64_image, default_prompt)
-    
-    return jsonify({'description': image_description})
+        # Get image description
+        latest_image_description = image_to_text(Groq(api_key=grok_api_key), llava_model, base64_image, default_prompt)
+        
+        # Clean up the saved image
+        if os.path.exists(image_path):
+            os.remove(image_path)
+        
+        return jsonify({
+            'success': True,
+            'description': latest_image_description
+        })
+        
+    except Exception as e:
+        logger.error(f"Error generating description: {str(e)}")
+        if os.path.exists(image_path):
+            os.remove(image_path)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
-# ChatGPT conversation handler that takes the image description as the prompt
 def ChatGPT_conversation(conversation):
-    response = client.chat.completions.create(
-        model= MODEL_ID,
-        messages=conversation
-    )
-    conversation.append({
-        'role': response['choices'][0]['message']['role'],
-        'content': response['choices'][0]['message']['content']
-    })
-    return conversation
-@app.route('/generate_visual_story', methods=['POST'])
-def generate():
-    print("Initializing Call")
-    
-    # if 'image' not in request.files:
-    #     return jsonify({'error': 'No image file uploaded'})
-    
-    # image = request.files['image']
-    # default_prompt = 'Describe this image in detail like a story.'
+    """Handle the conversation with GPT model"""
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=conversation,
+            temperature=0.7,
+            max_tokens=2000
+        )
+        
+        conversation.append({
+            'role': response.choices[0].message.role,
+            'content': response.choices[0].message.content
+        })
+        return conversation
+    except Exception as e:
+        logger.error(f"Error in ChatGPT conversation: {str(e)}")
+        raise
 
-    # Save and encode the image
-    # image_path = secure_filename(image.filename)
-    # image.save(image_path)
-    # base64_image = encode_image(image_path)
+def generate_image(prompt):
+    """Generate an image using the OpenAI API"""
+    try:
+        res = openai_client.images.generate(
+            prompt=prompt,
+            n=1,
+            size="1024x1024",
+            response_format="b64_json"
+        )
+        return res.data[0].b64_json
+    except Exception as e:
+        logger.error(f"Error generating image: {str(e)}")
+        raise
+
+@app.route('/generate_visual_story', methods=['POST'])
+def generate_visual_story():
+    """Generate story based on the latest image description"""
+    global latest_image_description
 
     try:
-        # Get image description directly
-        # image_description = image_to_text(client, llava_model, base64_image, default_prompt)
-        
-        # Initialize conversation with generated description
-        conversation = [
+        if not latest_image_description:
+            return jsonify({
+              'success': False,
+                'error': 'No image description available. Please generate a description first.'
+            }), 400
+
+        # Initialize conversation with the image description
+        conversation = []
+        conversation.append(
             {
-                'role': 'system', 
-                'content': f'Give a short story with a description of an image that would suit each paragraph. '
-                          f'Format = Image Description: Paragraph: {image_description}'
+                'role':'system', 
+                'content': f'''Give a short story with a description of an image that would suit each paragraph. The following is the prompt:
+                
+                Image Description:
+                {latest_image_description}
+                
+                Paragraph:'''
             }
-        ]
+        )
         conversation = ChatGPT_conversation(conversation)
-        raw_contents = conversation[1]["content"]
-
-        # Rest of the function remains the same
-        split_contents = re.split('\n|\n\n', raw_contents)
-        image_descriptions, paragraphs, images = [], [], []
-
-        for line in split_contents:
-            if line == "":
-                continue
-            if "Image Description:" in line:
-                image_descriptions.append(line[len('Image Description:'):].strip())
-            elif "Paragraph:" in line:
-                paragraphs.append(line[len('Paragraph:'):].strip())
+        
+        # Extract the paragraphs and image descriptions from the conversation
+        image_descriptions = []
+        paragraphs = []
+        for message in conversation:
+            if message['role'] == 'assistant':
+                content = message['content']
+                if 'Image Description:' in content:
+                    image_descriptions.append(content.split('Image Description:')[1].strip())
+                elif 'Paragraph:' in content:
+                    paragraphs.append(content.split('Paragraph:')[1].strip())
 
         # Generate images
+        images = []
         for index, description in enumerate(image_descriptions):
-            if index >= len(paragraphs):
-                break
-                
-            res = openai.Image.create(
-                prompt=description,
-                n=1,
-                size="1024x1024",
-                response_format="b64_json"
-            )
-            
-            b64 = res['data'][0]['b64_json']
+            image_data = generate_image(description)
             images.append({
-                'paragraph': paragraphs[index], 
-                'description': description, 
-                'data': b64
+                'paragraph': paragraphs[index],
+                'description': description,
+                'data': image_data
             })
 
-        # Clean up
-        if os.path.exists(image_path):
-            os.remove(image_path)
-            
-        return jsonify(images)
+        story_text = '\n\n'.join(paragraphs)
         
+        return jsonify({
+           'success': True,
+           'original_description': latest_image_description,
+           'story_data': images,
+           'story_text': story_text
+        })
+
     except Exception as e:
-        if os.path.exists(image_path):
-            os.remove(image_path)
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error in story generation: {str(e)}")
+        return jsonify({
+           'success': False,
+            'error': str(e)
+        }), 500
 
-def text_to_speech(text):
-    """Convert text to speech using ElevenLabs API"""
-    headers = {
-        "xi-api-key": elevenlabs_api_key,
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "text": text,
-        "model_id": "eleven_monolingual_v1",
-        "voice_settings": VOICE_SETTINGS
-    }
-    
-    response = requests.post(ELEVENLABS_URL, json=payload, headers=headers)
-    
-    if response.status_code == 200:
-        return response.content
-    else:
-        raise Exception(f"ElevenLabs API Error: {response.text}")
-
-@app.route('/Hear_story', methods=['POST'])
-def generate_story_with_audio():
+def generate_image(prompt):
+    """Generate an image using the OpenAI API"""
     try:
-        # Generate the story and images
-        story_data = generate()
-        
-        # Convert story to speech
-        full_story = ""
-        for image_data in story_data:
-            full_story += f"{image_data['paragraph']}\n\n"
-        
-        audio_data = text_to_speech(full_story)
-        
-        # Convert audio data to base64 for frontend
-        audio_base64 = base64.b64encode(audio_data).decode('utf-8')
-        
-        # Add audio data to response
-        response_data = {
-            'story': story_data,  # Contains paragraphs, descriptions, and generated images
-            'audio': audio_base64
-        }
-        
-        return jsonify(response_data)
-    
+        res = openai_client.images.generate(
+            prompt=prompt,
+            n=1,
+            size="1024x1024",
+            response_format="b64_json"
+        )
+        return res.data[0].b64_json
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error generating image: {str(e)}")
+        raise
 
+@app.route('/hear_story', methods=['POST'])
+def hear_story():
+    try:
+        # Get the story text from the request
+        story_text = request.json['story_text']
+
+        # Set up the text-to-speech request
+        url = "https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB"
+        payload = {
+            "text": story_text,
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.8,
+                "style": 1,
+                "use_speaker_boost": False
+            }
+        }
+        headers = {
+            "xi-api-key": elevenlabs_api_key,
+            "Content-Type": "application/json"
+        }
+
+        # Send the text-to-speech request
+        response = requests.post(url, json=payload, headers=headers)
+
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Use BytesIO to handle the audio data in memory
+            audio_data = io.BytesIO(response.content)
+
+            # Initialize pygame mixer
+            pygame.mixer.init()
+
+            # Load and play the audio from memory
+            pygame.mixer.music.load(audio_data)
+            print("Playing audio...")
+            pygame.mixer.music.play()
+
+            # Wait for the audio to finish
+            while pygame.mixer.music.get_busy():
+                pygame.time.Clock().tick(10)
+
+            # Return a success response
+            return jsonify({'success': True})
+        else:
+            # Return an error response
+            return jsonify({'success': False, 'error': response.text}), 500
+
+    except Exception as e:
+        logger.error(f"Error in hearing story: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500 
+    
 if __name__ == '__main__':
     app.run(port=8080, debug=True)

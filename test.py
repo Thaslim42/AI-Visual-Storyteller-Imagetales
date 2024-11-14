@@ -219,7 +219,7 @@ def generate_visual_story():
         
         return jsonify({
            'success': True,
-            'original_description': latest_image_description,
+           'original_description': latest_image_description,
            'story_data': images,
            'story_text': story_text
         })
@@ -243,7 +243,7 @@ def hear_story():
         url = "https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB"
         payload = {
             "text": story_text,
-            "model_id": "eleven_monolingual_v1",
+            # "model_id": "eleven_monolingual_v1",
             "voice_settings": {
                 "stability": 0.5,
                 "similarity_boost": 0.8,

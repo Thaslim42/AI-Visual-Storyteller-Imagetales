@@ -10,6 +10,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState('');
   const [error, setError] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
@@ -76,6 +77,31 @@ function App() {
     }
   };
 
+  const playStory = async () => {
+    if (!storyData || isPlaying) return;
+
+    setIsPlaying(true);
+    setLoadingProgress('Playing audio...');
+
+    try {
+      // Construct the story text from all paragraphs
+      const story_text = storyData.map(segment => segment.paragraph).join(' ');
+      
+      const response = await axios.post('http://localhost:8080/hear_story', {
+        story_text: story_text
+      });
+
+      if (!response.data.success) {
+        throw new Error('Failed to play audio');
+      }
+    } catch (err) {
+      setError('Error playing audio: ' + err.message);
+    } finally {
+      setIsPlaying(false);
+      setLoadingProgress('');
+    }
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -119,6 +145,14 @@ function App() {
             >
               {loading && description ? 'Generating...' : 'Generate Story'}
             </button>
+            <button
+              onClick={playStory}
+              disabled={!storyData || loading || isPlaying}
+              className="action-button audio-button"
+              aria-label="Play story audio"
+            >
+              <span className="audio-icon">🔊</span>
+            </button>
           </div>
 
           {error && <div className="error-message">{error}</div>}
@@ -141,7 +175,7 @@ function App() {
 
         {storyData && (
           <section className="story-section">
-            <h2>Generated Visual Story</h2>
+            <h2>GENERATED VISUAL STORY</h2>
             <div className="story-container">
               {storyData.map((segment, index) => (
                 <div key={index} className={`story-segment ${index % 2 === 1 ? 'reverse' : ''}`}>
