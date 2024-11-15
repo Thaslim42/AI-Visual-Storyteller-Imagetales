@@ -8,8 +8,6 @@ generate story from image frames
 ![screenshot3.png](https://github.com/Thaslim42/AI-Visual-Storyteller-Imagetales/blob/main/Screenshot%202024-11-12%20162222.png)
 
 
-This Flask-based web application integrates multiple AI services to generate image descriptions, stories, and voice outputs. The application performs the following:
-
 Image Description Generation: Users can upload an image, and the app generates a cartoon-like description using the LLAVA model.
 
 Story Generation: Based on the image description, a visual story is created, where each paragraph is paired with an image description. The story is generated using OpenAI's GPT-3.5 model.
